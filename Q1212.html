@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>اختبار – القيمة المنزلية وقراءة الأعداد (نسخة تفاعلية)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Tahoma, Arial, "Noto Kufi Arabic", "Noto Sans Arabic", "Dubai"; }
+    .choice input:checked + label { outline: 2px solid; }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+  <div class="max-w-3xl mx-auto p-4 sm:p-8">
+    <header class="mb-6">
+      <h1 class="text-3xl font-extrabold text-slate-900 mb-1">🧮 اختبار تفاعلي – القيمة المنزلية وقراءة الأعداد</h1>
+      <p class="text-slate-600">أدخل اسمك، ثم أجب عن الأسئلة. ستحصل على تغذية راجعة فورية بعد كل سؤال، وفي النهاية يظهر مجموعك.</p>
+    </header>
+
+    <section class="mb-6 bg-white rounded-xl shadow p-4">
+      <label for="student" class="block text-sm font-medium text-slate-700 mb-1">اسم الطالب</label>
+      <input id="student" class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-500" placeholder="اكتب اسمك هنا" />
+    </section>
+
+    <main id="quiz" class="space-y-6"></main>
+
+    <footer class="mt-8 bg-white rounded-xl shadow p-4">
+      <div class="flex items-center gap-3">
+        <button id="finishBtn" class="px-5 py-2.5 rounded-lg bg-sky-600 text-white font-semibold hover:bg-sky-700 transition disabled:opacity-50">إنهاء وعرض النتيجة</button>
+        <button id="retryBtn" class="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100">إعادة الاختبار</button>
+      </div>
+      <div id="final" class="mt-4 text-lg font-bold"></div>
+    </footer>
+  </div>
+
+<script>
+// ————————————————————————————————
+// بنية الأسئلة: عدّل نص السؤال والخيارات والإجابة الصحيحة حسب ورقتك.
+// الحقول:
+// id, type: 'mcq', stem, options[4], correct (0..3), explain
+// ————————————————————————————————
+const QUESTIONS = [
+  {
+    id: 1,
+    type: "mcq",
+    stem: "قرِّب العدد ١٢٨١٢٤ إلى أقرب ألف.",
+    options: ["١٢٨٠٠٠", "١٢٧٠٠٠", "١٣٠٠٠٠", "١٢٨٨٠٠"],
+    correct: 0,
+    explain: "ننظر إلى خانة المئات (١٢٤). لأنها أقل من ٥٠٠ نقرب إلى الأدنى: ١٢٨٠٠٠."
+  },
+  { id: 2, type: "mcq", stem: "رتّب الأعداد التالية من الأكبر إلى الأصغر:\n(انسخ الأعداد وخيارات الترتيب من الورقة)", options: ["خيار أ", "خيار ب", "خيار ج", "خيار د"], correct: 0, explain: "قارن عدد الخانات ثم القيم من اليسار."},
+  { id: 3, type: "mcq", stem: "رتّب الأعداد التالية من الأصغر إلى الأكبر:\n(انسخ الأعداد وخيارات الترتيب من الورقة)", options: ["خيار أ", "خيار ب", "خيار ج", "خيار د"], correct: 0, explain: "ابدأ بعدد الخانات الأقل."},
+  { id: 4, type: "mcq", stem: "اكتب العدد: ستة وخمسون مليونًا وثلاثة وثلاثون ألفًا بالصيغة القياسية.", options: ["٥٦٠٣٣٠٠٠", "٥٦٣٠٠٠٠٠", "٥٦٣٣٠٠٠٠", "٥٦٠٣٠٠٠٠"], correct: 0, explain: "٥٦٠٠٠٠٠٠ + ٣٣٠٠٠ = ٥٦٠٣٣٠٠٠."},
+  { id: 5, type: "mcq", stem: "اكتب العدد: ٩٠٠٠٠٠ + ٦٠٠ + ٨٠ + ٣ بالصيغة القياسية.", options: ["٩٠٠٦٨٣", "٩٠٠٦٨٢", "٩٠٠٠٦٨٣", "٩٠٠٠٠٦٨٢"], correct: 2, explain: "المجموع = ٩٠٠٦٨٣."},
+  { id: 6, type: "mcq", stem: "اكتب العدد ٢٠٤٦٧١ بالصيغة اللفظية.", options: ["مئتان وستة وأربعون ألفًا وسبعمئة وواحد", "مئتان وأربعة وستون ألفًا وسبعمئة وواحد", "مليونان وأربع مئة وستة آلاف وتسعمئة وواحد", "مئتا ألف وست مئة وواحد"], correct: 1, explain: "٢٠٤٦٧١ = ٢٠٠ ألف + ٤٦ ألف + ٧٠٠ + ١."},
+  { id: 7, type: "mcq", stem: "اكتب العدد ٧٣١٠٠٠ بالصّيغة التحليلية.", options: ["٧٠٠٠٠٠ + ٣٠٠٠ + ١٠٠ + ٠ + ٠", "٧٠٠٠٠٠ + ٣٠٠ + ١٠ + ١ + ٠", "٧٠٠٠٠٠ + ٣٠٠٠ + ١٠ + ١ + ٠", "٧٠٠٠٠٠ + ٣٠٠٠ + ١٠٠ + ١ + ٠"], correct: 0, explain: "٧٣١٠٠٠ = ٧٠٠٠٠٠ + ٣٠٠٠ + ١٠٠٠؟ عدّل إذا لزم حسب ورقتك."},
+  {
+    id: 8,
+    type: "mcq",
+    stem: "ما الرقم الذي يجعل الجملة ١٨ < ■٤٥١٨ صحيحة؟ (■ خانة الآلاف)",
+    options: ["٣", "٤", "٥", "٦"],
+    correct: 0,
+    explain: "أي رقم آحاد آلاف يجعل العدد أكبر من ١٨؛ الإجابة وفق الورقة ٣."
+  },
+  {
+    id: 9,
+    type: "mcq",
+    stem: "اكتب العدد: ٣٠٠٠٠٠٠ + ٤٠٠٠٠ + ٨٠٠ + ٣٠ + ٦ بالصيغة القياسية.",
+    options: ["٣٤٠٨٠٣٦", "٣٤٠٨٣٦", "٣٤٠٨٣٦٦", "٣٤٠٤٨٣٦"],
+    correct: 0,
+    explain: "المجموع = ٣٤٠٨٠٣٦."
+  },
+  {
+    id: 10,
+    type: "mcq",
+    stem: "اكتب العدد: عشرون مليونًا وست مئة ألف وأربعمئة وتسعة وثلاثون بالصيغة القياسية.",
+    options: ["٢٠،٠٦٠،٤٣٩", "٢٠،٦٠٠،٤٠٣٩", "٢٠،٦٠٠،٤٣٩", "٢٠،٦٠٠،٤٣٩"],
+    correct: 2,
+    explain: "٢٠،٠٠٠،٠٠٠ + ٦٠٠،٠٠٠ + ٤٣٩ = ٢٠،٦٠٠،٤٣٩."
+  },
+  {
+    id: 11,
+    type: "mcq",
+    stem: "اكتب العدد: ٩٠٠٠٠٠٠ + ٧٠٠٠٠٠ + ١٠٠٠ + ٦٠ + ٥ بالصيغة القياسية.",
+    options: ["٩،٧٠١،٠٦٥", "٩،٧٣٠،٠٦٥", "٩،٧٠٠،٠٦٥", "٩،٧٣٠،٦٥٠"],
+    correct: 0,
+    explain: "المجموع = ٩،٧٠١،٠٦٥."
+  },
+  {
+    id: 12,
+    type: "mcq",
+    stem: "ما الرقم الذي يجعل الجملة ٨٣■٥ < ٨٣ صحيحة؟ (■ خانة العشرات)",
+    options: ["١", "٢", "٨", "٠"],
+    correct: 3,
+    explain: "بجعل العشرات صفرًا يصبح ٨٣٠٥ أصغر من ٨٣؟ (عدّل السؤال إن لزم)."
+  },
+  {
+    id: 13,
+    type: "mcq",
+    stem: "رتّب الأعداد التالية من الأكبر إلى الأصغر:\n(انسخ الأعداد وخيارات الترتيب من الورقة)",
+    options: ["ترتيب أ", "ترتيب ب", "ترتيب ج", "ترتيب د"],
+    correct: 0,
+    explain: "قارن عدد الخانات أولًا ثم القيم من اليسار."
+  },
+  {
+    id: 14,
+    type: "mcq",
+    stem: "يرغب ١٢ طالبًا في زيارة متحف العلوم، ورسم الدخول ٨ ريالات للشخص. ما التكلفة الإجمالية؟",
+    options: ["٩٨ ريالًا", "٩٦ ريالًا", "٨٦ ريالًا", "٩٠ ريالًا"],
+    correct: 1,
+    explain: "١٢ × ٨ = ٩٦ ريالًا."
+  },
+  {
+    id: 15,
+    type: "mcq",
+    stem: "المسافة بين الدمام والطائف ١١٧٧ كيلومترًا. ما تقريبها لأقرب مئة؟",
+    options: ["١٢٠٠ كيلومتر", "١٦٠٠ كيلومتر", "١١٠٠ كيلومتر", "١٠٠٠ كيلومتر"],
+    correct: 0,
+    explain: "١١٧٧ ≈ ١٢٠٠ (لأقرب مئة)."
+  },
+  {
+    id: 16,
+    type: "mcq",
+    stem: "سافر وليد أربع مرات: ٧٣٨كم، ٥٥٨كم، ٩٣٢كم، ٧٨٣كم. أي الرحلات أطول؟",
+    options: ["الأولى", "الثانية", "الثالثة", "الرابعة"],
+    correct: 2,
+    explain: "الأطول ٩٣٢كم (الثالثة)."
+  }
+];
+
+// ————— واجهة العرض —————
+const quizEl = document.getElementById("quiz");
+
+function renderQuestion(q, index) {
+  const card = document.createElement("section");
+  card.className = "bg-white rounded-xl shadow p-4";
+  const qNum = index + 1;
+
+  card.innerHTML = `
+    <div class="flex items-start gap-3">
+      <div class="w-9 h-9 shrink-0 rounded-lg bg-sky-600 text-white grid place-items-center font-bold">${qNum}</div>
+      <div class="flex-1">
+        <h2 class="text-lg font-semibold leading-7 text-slate-900 whitespace-pre-wrap">${q.stem}</h2>
+        <form class="mt-3 space-y-2" data-qid="${q.id}">
+          ${q.options.map((opt, i) => `
+            <div class="choice relative flex items-center gap-2 rounded-lg border border-slate-300 p-2">
+              <input id="q${q.id}_opt${i}" type="radio" name="q${q.id}" value="${i}" class="peer sr-only"/>
+              <label for="q${q.id}_opt${i}" class="flex-1 cursor-pointer select-none peer-checked:border-sky-600">
+                <span class="font-medium text-slate-800">(${["أ","ب","ج","د"][i]})</span>
+                <span class="ml-2">${opt}</span>
+              </label>
+            </div>
+          `).join("")}
+          <div class="mt-3 flex items-center gap-3">
+            <button class="submitBtn px-4 py-2 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700" type="submit">تحقّق من الإجابة</button>
+            <span class="result text-sm font-bold"></span>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+
+  const form = card.querySelector("form");
+  const result = card.querySelector(".result");
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const data = new FormData(form);
+    const pick = data.get(`q${q.id}`);
+    if (pick === null) {
+      result.textContent = "↩️ اختر إجابة أولاً.";
+      result.className = "result text-sm font-bold text-amber-700";
+      return;
+    }
+    const chosen = Number(pick);
+    const ok = chosen === q.correct;
+    result.innerHTML = ok
+      ? "✅ صحيح. " + (q.explain || "")
+      : "❌ غير صحيح. الإجابة الصحيحة: (" + ["أ","ب","ج","د"][q.correct] + ") – " + (q.options[q.correct] || "") + (q.explain ? " — " + q.explain : "");
+    result.className = "result text-sm font-bold " + (ok ? "text-emerald-700" : "text-rose-700");
+    // قفل الخيارات بعد الإجابة
+    form.querySelectorAll("input[type=radio]").forEach(r => r.disabled = true);
+    form.querySelector(".submitBtn").disabled = true;
+    // سجّل الدرجة
+    scores[q.id] = ok ? 1 : 0;
+  });
+
+  quizEl.appendChild(card);
+}
+
+const scores = {};
+QUESTIONS.forEach((q, i) => renderQuestion(q, i));
+
+document.getElementById("finishBtn").addEventListener("click", () => {
+  const name = (document.getElementById("student").value || "طالب بلا اسم").trim();
+  const total = Object.values(scores).reduce((a, b) => a + b, 0);
+  const max = QUESTIONS.length;
+  const pct = Math.round((total / max) * 100);
+  const msg = `الاسم: ${name} — الدرجة: ${total}/${max} (${pct}٪)`;
+  document.getElementById("final").textContent = msg;
+
+  // حفظ محلي في متصفح الطالب
+  const rec = JSON.parse(localStorage.getItem("quizScores") || "[]");
+  rec.push({ name, total, max, pct, at: new Date().toISOString() });
+  localStorage.setItem("quizScores", JSON.stringify(rec));
+});
+
+document.getElementById("retryBtn").addEventListener("click", () => {
+  location.reload();
+});
+</script>
+
+</body>
+</html>
